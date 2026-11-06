@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Y37.AI — Yōsai (要塞)</title>
+  <meta name="description" content="Y37.AI — Yōsai (要塞). Trust is a vulnerability. Verify the intent." />
+  <meta name="theme-color" content="#050507" />
+  <meta property="og:title" content="Y37.AI — Yōsai (要塞)" />
+  <meta property="og:description" content="Trust is a vulnerability. Verify the intent." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://y37.ai" />
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='12' fill='%23050507'/%3E%3Cpolygon points='32,8 54,20 54,44 32,56 10,44 10,20' fill='none' stroke='%23e2e8f0' stroke-width='2' stroke-opacity='0.85'/%3E%3Ccircle cx='32' cy='32' r='4' fill='%2310b981'/%3E%3C/svg%3E" />
+  <style>
+    :root {
+      --bg: #050507;
+      --bg-panel: rgba(12, 13, 18, 0.72);
+      --border: rgba(255, 255, 255, 0.08);
+      --border-strong: rgba(255, 255, 255, 0.16);
+      --text: #f3f4f6;
+      --text-muted: #8b92a5;
+      --text-dim: #4b5263;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.18);
+      --gold: #d4af37;
+      --mono: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace;
+      --sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html, body {
+      min-height: 100%;
+      background-color: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      overflow-x: hidden;
+      selection-background-color: var(--accent);
+      selection-color: #000;
+    }
+
+    ::selection {
+      background: rgba(16, 185, 129, 0.25);
+      color: #fff;
+    }
+
+    /* Subtle architectural grid & ambient glow */
+    .ambient-canvas {
+      position: fixed;
+      inset: 0;
+      z-index: 0;
+      pointer-events: none;
+      background-image:
+        radial-gradient(circle at 50% 18%, rgba(16, 185, 129, 0.07) 0%, transparent 55%),
+        radial-gradient(circle at 85% 80%, rgba(255, 255, 255, 0.03) 0%, transparent 45%),
+        linear-gradient(to right, rgba(255, 255, 255, 0.022) 1px, transparent 1px),
+        linear-gradient(to bottom, rgba(255, 255, 255, 0.022) 1px, transparent 1px);
+      background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
+      mask-image: radial-gradient(ellipse 90% 85% at 50% 45%, #000 35%, transparent 100%);
+      -webkit-mask-image: radial-gradient(ellipse 90% 85% at 50% 45%, #000 35%, transparent 100%);
+    }
+
+    .watermark-kanji {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      font-size: clamp(14rem, 36vw, 32rem);
+      font-weight: 800;
+      color: rgba(255, 255, 255, 0.013);
+      letter-spacing: -0.05em;
+      user-select: none;
+      pointer-events: none;
+      z-index: 0;
+      white-space: nowrap;
+      line-height: 1;
+    }
+
+    .page-shell {
+      position: relative;
+      z-index: 1;
+      min-height: 100svh;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: clamp(1.25rem, 3vw, 2.5rem) clamp(1.25rem, 4vw, 3rem);
+    }
+
+    /* Top Telemetry Bar */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-muted);
+    }
+
+    .brand-mark {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      color: var(--text);
+      font-weight: 600;
+      letter-spacing: 0.14em;
+    }
+
+    .status-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background-color: var(--accent);
+      box-shadow: 0 0 10px var(--accent);
+      animation: pulse 3.7s infinite ease-in-out;
+    }
+
+    @keyframes pulse {
+      0%, 100% { opacity: 0.95; transform: scale(1); }
+      50% { opacity: 0.35; transform: scale(0.88); }
+    }
+
+    .telemetry-right {
+      display: flex;
+      align-items: center;
+      gap: 1.5rem;
+    }
+
+    .telemetry-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+    }
+
+    .telemetry-tag span.dim {
+      color: var(--text-dim);
+    }
+
+    /* Main Content Area */
+    main {
+      margin: auto 0;
+      padding: clamp(2.5rem, 6vh, 5rem) 0;
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: clamp(2rem, 5vw, 4.5rem);
+      align-items: center;
+    }
+
+    /* Left Column: Hero Identity & Manifesto */
+    .hero-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1.75rem;
+    }
+
+    .eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.65rem;
+      font-family: var(--mono);
+      font-size: 0.75rem;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--accent);
+      background: rgba(16, 185, 129, 0.06);
+      border: 1px solid rgba(16, 185, 129, 0.22);
+      padding: 0.4rem 0.85rem;
+      border-radius: 999px;
+      width: fit-content;
+    }
+
+    .title-lockup {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+    }
+
+    h1 {
+      font-size: clamp(3.5rem, 8vw, 6.25rem);
+      font-weight: 700;
+      letter-spacing: -0.04em;
+      line-height: 0.95;
+      color: var(--text);
+      display: flex;
+      align-items: baseline;
+      gap: 0.15em;
+    }
+
+    h1 .dot-ai {
+      font-weight: 300;
+      color: var(--text-muted);
+      font-size: 0.65em;
+      letter-spacing: -0.02em;
+    }
+
+    .etymology-bar {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.75rem;
+      margin-top: 0.6rem;
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text-muted);
+    }
+
+    .etymology-pill {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border);
+      padding: 0.28rem 0.65rem;
+      border-radius: 4px;
+      color: #d1d5db;
+    }
+
+    .etymology-pill strong {
+      color: #fff;
+      font-weight: 600;
+    }
+
+    .manifesto {
+      font-size: clamp(1.15rem, 2vw, 1.4rem);
+      line-height: 1.55;
+      color: var(--text-muted);
+      max-width: 54ch;
+      font-weight: 400;
+    }
+
+    .manifesto strong {
+      color: var(--text);
+      font-weight: 500;
+    }
+
+    /* Cryptic Axiom Grid */
+    .axioms {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0.85rem;
+      padding-top: 0.5rem;
+    }
+
+    .axiom-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      border-radius: 6px;
+      transition: border-color 0.25s ease, transform 0.25s ease;
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+    }
+
+    .axiom-card:hover {
+      border-color: var(--border-strong);
+      transform: translateY(-2px);
+    }
+
+    .axiom-index {
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      margin-bottom: 0.45rem;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .axiom-title {
+      font-family: var(--mono);
+      font-size: 0.82rem;
+      color: var(--text);
+      font-weight: 600;
+      margin-bottom: 0.25rem;
+      letter-spacing: 0.02em;
+    }
+
+    .axiom-desc {
+      font-size: 0.78rem;
+      color: var(--text-muted);
+      line-height: 1.45;
+    }
+
+    /* Right Column: Interactive Citadel / Prime 37 Artifact */
+    .artifact-col {
+      display: flex;
+      flex-direction: column;
+      gap: 1rem;
+    }
+
+    .citadel-panel {
+      background: var(--bg-panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 1.5rem;
+      position: relative;
+      overflow: hidden;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.65);
+    }
+
+    .citadel-panel::before {
+      content: "";
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 1px;
+      background: linear-gradient(90deg, transparent, rgba(16, 185, 129, 0.5), transparent);
+    }
+
+    .panel-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-bottom: 1rem;
+      margin-bottom: 1.25rem;
+      border-bottom: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+    }
+
+    .panel-badge {
+      color: var(--accent);
+      background: rgba(16, 185, 129, 0.08);
+      border: 1px solid rgba(16, 185, 129, 0.25);
+      padding: 0.18rem 0.5rem;
+      border-radius: 3px;
+      font-size: 0.68rem;
+    }
+
+    /* Geometric SVG Citadel Seal */
+    .geometry-stage {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1.25rem 0;
+    }
+
+    .citadel-svg {
+      width: 100%;
+      max-width: 240px;
+      height: auto;
+      overflow: visible;
+      cursor: pointer;
+    }
+
+    .ring-slow {
+      transform-origin: 120px 120px;
+      animation: spinSlow 37s linear infinite;
+    }
+
+    .ring-reverse {
+      transform-origin: 120px 120px;
+      animation: spinReverse 73s linear infinite;
+    }
+
+    @keyframes spinSlow {
+      from { transform: rotate(0deg); }
+      to { transform: rotate(360deg); }
+    }
+
+    @keyframes spinReverse {
+      from { transform: rotate(360deg); }
+      to { transform: rotate(0deg); }
+    }
+
+    /* 4-Stage Cryptic Pipeline Display */
+    .pipeline-bar {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.4rem;
+      margin: 1.1rem 0;
+      font-family: var(--mono);
+      font-size: 0.7rem;
+    }
+
+    .stage-node {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      padding: 0.5rem 0.4rem;
+      text-align: center;
+      position: relative;
+      transition: all 0.2s ease;
+    }
+
+    .stage-node.active {
+      border-color: rgba(16, 185, 129, 0.45);
+      background: rgba(16, 185, 129, 0.06);
+      color: #fff;
+    }
+
+    .stage-code {
+      display: block;
+      font-weight: 600;
+      color: var(--text);
+      letter-spacing: 0.06em;
+    }
+
+    .stage-sub {
+      display: block;
+      font-size: 0.6rem;
+      color: var(--text-dim);
+      margin-top: 0.15rem;
+    }
+
+    /* Prime 37 & Cryptographic Ledger Readout */
+    .terminal-readout {
+      background: rgba(3, 4, 7, 0.75);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 0.9rem 1rem;
+      font-family: var(--mono);
+      font-size: 0.73rem;
+      line-height: 1.65;
+      color: var(--text-muted);
+    }
+
+    .readout-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px dashed rgba(255, 255, 255, 0.05);
+      padding: 0.15rem 0;
+    }
+
+    .readout-row:last-child {
+      border-bottom: none;
+    }
+
+    .readout-key {
+      color: var(--text-dim);
+    }
+
+    .readout-val {
+      color: var(--text);
+      text-align: right;
+      word-break: break-all;
+    }
+
+    .readout-val.accent {
+      color: var(--accent);
+    }
+
+    .interactive-hint {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 0.85rem;
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      color: var(--text-dim);
+    }
+
+    .cycle-btn {
+      background: transparent;
+      border: 1px solid var(--border-strong);
+      color: var(--text-muted);
+      font-family: var(--mono);
+      font-size: 0.68rem;
+      padding: 0.28rem 0.65rem;
+      border-radius: 4px;
+      cursor: pointer;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      transition: all 0.2s ease;
+    }
+
+    .cycle-btn:hover {
+      color: var(--text);
+      border-color: var(--accent);
+      background: rgba(16, 185, 129, 0.08);
+    }
+
+    /* Footer */
+    footer {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      padding-top: 1.25rem;
+      border-top: 1px solid var(--border);
+      font-family: var(--mono);
+      font-size: 0.72rem;
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+    }
+
+    .footer-left, .footer-right {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      flex-wrap: wrap;
+    }
+
+    .sep {
+      color: rgba(255, 255, 255, 0.12);
+    }
+
+    /* Responsive Breakpoints */
+    @media (max-width: 920px) {
+      main {
+        grid-template-columns: 1fr;
+        gap: 2.5rem;
+        padding: 2rem 0;
+      }
+
+      .manifesto {
+        max-width: 100%;
+      }
+    }
+
+    @media (max-width: 600px) {
+      .telemetry-right .hide-mobile {
+        display: none;
+      }
+
+      .axioms {
+        grid-template-columns: 1fr;
+      }
+
+      .etymology-bar {
+        gap: 0.5rem;
+      }
+
+      footer {
+        flex-direction: column;
+        align-items: flex-start;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="ambient-canvas" aria-hidden="true"></div>
+  <div class="watermark-kanji" aria-hidden="true">要塞</div>
+
+  <div class="page-shell">
+    <header>
+      <div class="brand-mark">
+        <span class="status-dot" aria-hidden="true"></span>
+        <span>Y37.AI // YŌSAI</span>
+      </div>
+      <div class="telemetry-right">
+        <div class="telemetry-tag hide-mobile">
+          <span class="dim">PRIME</span>
+          <span>π(37) = 12</span>
+        </div>
+        <div class="telemetry-tag hide-mobile">
+          <span class="dim">EMIRP</span>
+          <span>37 ⇄ 73</span>
+        </div>
+        <div class="telemetry-tag">
+          <span class="dim">STATE</span>
+          <span style="color: var(--accent);">STEALTH</span>
+        </div>
+      </div>
+    </header>
+
+    <main>
+      <!-- Left Column: Identity & Cryptic Manifesto -->
+      <section class="hero-col" aria-labelledby="hero-heading">
+        <div class="eyebrow">
+          <span>ZERO-TRUST INTENT GOVERNANCE</span>
+        </div>
+
+        <div class="title-lockup">
+          <h1 id="hero-heading">
+            Y37<span class="dot-ai">.AI</span>
+          </h1>
+          <div class="etymology-bar">
+            <span class="etymology-pill"><strong>Y</strong> — Yōsai (要塞 · Fortress)</span>
+            <span class="etymology-pill"><strong>37</strong> — 12th Prime · Centered Hexagonal</span>
+          </div>
+        </div>
+
+        <p class="manifesto">
+          Advisory permissions ask if an action is allowed. <strong>A fortress proves it cannot be forged.</strong><br />
+          Built for an era where autonomous agents and human quorums operate under mathematical certainty—trusting neither the caller, the runtime, nor the ledger beneath it.
+        </p>
+
+        <div class="axioms" role="list">
+          <div class="axiom-card" role="listitem">
+            <div class="axiom-index">
+              <span>AXIOM 01</span>
+              <span>SIG</span>
+            </div>
+            <div class="axiom-title">Signed Intent</div>
+            <div class="axiom-desc">
+              Ambient bearer tokens are obsolete. Every human and autonomous actor signs canonical payloads before evaluation begins.
+            </div>
+          </div>
+
+          <div class="axiom-card" role="listitem">
+            <div class="axiom-index">
+              <span>AXIOM 02</span>
+              <span>N-ARY</span>
+            </div>
+            <div class="axiom-title">Recursive Quorum</div>
+            <div class="axiom-desc">
+              Top-down ancestry invariants and multi-branch consensus trees that no child node or super-admin can override.
+            </div>
+          </div>
+
+          <div class="axiom-card" role="listitem">
+            <div class="axiom-index">
+              <span>AXIOM 03</span>
+              <span>JCS</span>
+            </div>
+            <div class="axiom-title">Immutable Execution</div>
+            <div class="axiom-desc">
+              Zero gap between decision and state mutation. Append-only cryptographic seals expose silent tampering on read.
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Right Column: Interactive Citadel & Prime 37 Telemetry -->
+      <aside class="artifact-col" aria-label="Cryptographic Invariant Telemetry">
+        <div class="citadel-panel">
+          <div class="panel-header">
+            <span>CITADEL INVARIANT // C₆H₃₇</span>
+            <span class="panel-badge" id="seal-status">SEAL VERIFIED</span>
+          </div>
+
+          <!-- Centered Hexagonal Number 37 SVG Visualization -->
+          <div class="geometry-stage">
+            <svg class="citadel-svg" id="citadel-svg" viewBox="0 0 240 240" role="img" aria-label="Centered hexagonal lattice of 37 nodes representing Yosai">
+              <defs>
+                <radialGradient id="coreGlow" cx="50%" cy="50%" r="50%">
+                  <stop offset="0%" stop-color="#10b981" stop-opacity="0.28" />
+                  <stop offset="100%" stop-color="#10b981" stop-opacity="0" />
+                </radialGradient>
+              </defs>
+
+              <!-- Ambient core glow -->
+              <circle cx="120" cy="120" r="88" fill="url(#coreGlow)" />
+
+              <!-- Outer rotating cryptographic dial -->
+              <g class="ring-reverse">
+                <circle cx="120" cy="120" r="106" fill="none" stroke="rgba(255,255,255,0.07)" stroke-width="1" stroke-dasharray="2 6" />
+                <polygon points="120,10 215,65 215,175 120,230 25,175 25,65" fill="none" stroke="rgba(255,255,255,0.06)" stroke-width="1" />
+              </g>
+
+              <!-- Inner rotating policy ring -->
+              <g class="ring-slow">
+                <polygon points="120,26 201,73 201,167 120,214 39,167 39,73" fill="none" stroke="rgba(16,185,129,0.22)" stroke-width="1" />
+                <circle cx="120" cy="120" r="68" fill="none" stroke="rgba(255,255,255,0.08)" stroke-width="0.75" stroke-dasharray="4 4" />
+              </g>
+
+              <!-- Structural lattice lines -->
+              <g stroke="rgba(255,255,255,0.07)" stroke-width="0.75">
+                <line x1="120" y1="36" x2="120" y2="204" />
+                <line x1="47.25" y1="78" x2="192.75" y2="162" />
+                <line x1="192.75" y1="78" x2="47.25" y2="162" />
+              </g>
+
+              <!-- 37 Nodes of the Centered Hexagonal Prime Lattice (1 + 6 + 12 + 18 = 37) -->
+              <g id="lattice-nodes"></g>
+            </svg>
+          </div>
+
+          <!-- 4-Stage Pipeline Indicator -->
+          <div class="pipeline-bar" aria-label="Four-stage verification pipeline">
+            <div class="stage-node active" data-stage="0">
+              <span class="stage-code">AUTH</span>
+              <span class="stage-sub">Ed25519</span>
+            </div>
+            <div class="stage-node active" data-stage="1">
+              <span class="stage-code">PE</span>
+              <span class="stage-sub">Depth 0..N</span>
+            </div>
+            <div class="stage-node active" data-stage="2">
+              <span class="stage-code">CE</span>
+              <span class="stage-sub">M-of-N Tree</span>
+            </div>
+            <div class="stage-node active" data-stage="3">
+              <span class="stage-code">EE</span>
+              <span class="stage-sub">Sealed Op</span>
+            </div>
+          </div>
+
+          <!-- Cryptic Prime 37 & Invariant Readout -->
+          <div class="terminal-readout" aria-live="polite">
+            <div class="readout-row">
+              <span class="readout-key">INVARIANT_ID</span>
+              <span class="readout-val accent" id="prop-title">CENTERED_HEX_PRIME_37</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-key">MATHEMATICAL_LAW</span>
+              <span class="readout-val" id="prop-formula">1 + 6 + 12 + 18 = 37 nodes</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-key">ARCHITECTURAL_ROLE</span>
+              <span class="readout-val" id="prop-meaning">Concentric defense-in-depth rings</span>
+            </div>
+            <div class="readout-row">
+              <span class="readout-key">ROW_SEAL_DIGEST</span>
+              <span class="readout-val" id="prop-hash">0x37f9...e82b19c4</span>
+            </div>
+          </div>
+
+          <div class="interactive-hint">
+            <span>LATTICE NODES: 37 / 37 ACTIVE</span>
+            <button type="button" class="cycle-btn" id="cycle-btn">INSPECT 37 ↻</button>
+          </div>
+        </div>
+      </aside>
+    </main>
+
+    <footer>
+      <div class="footer-left">
+        <span>Y37.AI</span>
+        <span class="sep">/</span>
+        <span>要塞 (YŌSAI)</span>
+        <span class="sep">/</span>
+        <span>TRUST NOTHING. VERIFY THE INTENT.</span>
+      </div>
+      <div class="footer-right">
+        <span>1 / 27 = 0.037037…</span>
+        <span class="sep">·</span>
+        <span>© Y37.AI</span>
+      </div>
+    </footer>
+  </div>
+
+  <script>
+    (function () {
+      // Generate the exact 37 nodes of a Centered Hexagonal Prime (1 center + 6 ring1 + 12 ring2 + 18 ring3 = 37)
+      const svgNS = "http://www.w3.org/2000/svg";
+      const container = document.getElementById("lattice-nodes");
+      const cx = 120;
+      const cy = 120;
+      const step = 27;
+
+      // Axial hex coordinates (q, r) with distance <= 3 yields exactly 37 points
+      const nodes = [];
+      const radius = 3;
+      for (let q = -radius; q <= radius; q++) {
+        const r1 = Math.max(-radius, -q - radius);
+        const r2 = Math.min(radius, -q + radius);
+        for (let r = r1; r <= r2; r++) {
+          const x = cx + step * (Math.sqrt(3) * q + (Math.sqrt(3) / 2) * r);
+          const y = cy + step * ((3 / 2) * r);
+          const ring = Math.max(Math.abs(q), Math.abs(r), Math.abs(-q - r));
+          nodes.push({ x, y, ring });
+        }
+      }
+
+      nodes.forEach((n, idx) => {
+        const circle = document.createElementNS(svgNS, "circle");
+        circle.setAttribute("cx", n.x.toFixed(2));
+        circle.setAttribute("cy", n.y.toFixed(2));
+
+        if (n.ring === 0) {
+          circle.setAttribute("r", "4.5");
+          circle.setAttribute("fill", "#10b981");
+        } else if (n.ring === 1) {
+          circle.setAttribute("r", "3");
+          circle.setAttribute("fill", "#e2e8f0");
+          circle.setAttribute("fill-opacity", "0.85");
+        } else if (n.ring === 2) {
+          circle.setAttribute("r", "2.4");
+          circle.setAttribute("fill", "#94a3b8");
+          circle.setAttribute("fill-opacity", "0.65");
+        } else {
+          circle.setAttribute("r", "2");
+          circle.setAttribute("fill", "#64748b");
+          circle.setAttribute("fill-opacity", "0.5");
+        }
+
+        circle.dataset.ring = n.ring;
+        circle.dataset.index = idx + 1;
+        container.appendChild(circle);
+      });
+
+      // Curated mathematical properties of 37 tied to Yōsai's cryptic architecture
+      const invariants = [
+        {
+          title: "CENTERED_HEX_PRIME_37",
+          formula: "1 + 6 + 12 + 18 = 37 nodes",
+          meaning: "Concentric zero-trust rings around the core",
+          hash: "0x37f9a4c1...e82b19c4",
+          activeRing: -1
+        },
+        {
+          title: "EMIRP_DUAL_SYMMETRY",
+          formula: "Prime #12 (37) ⇄ Prime #21 (73)",
+          meaning: "Bidirectional maker-checker non-repudiation",
+          hash: "0x73c019d2...4a110037",
+          activeRing: 1
+        },
+        {
+          title: "REPDIGIT_PERIODIC_FACTOR",
+          formula: "111 / 3 = 37  ·  1/37 = 0.027027…",
+          meaning: "Deterministic consensus across triadic quorums",
+          hash: "0x11100037...9c84b201",
+          activeRing: 2
+        },
+        {
+          title: "IRREGULAR_PRIME_INDEX_01",
+          formula: "37 divides numerator of B₃₂",
+          meaning: "Asymmetric anomaly & tamper detection on read",
+          hash: "0xb3200037...f0917a6e",
+          activeRing: 3
+        },
+        {
+          title: "ROOT_CITADEL_SINGULARITY",
+          formula: "Depth 0 → N immutable ancestry",
+          meaning: "Zero god-mode override · Self-governed core",
+          hash: "0x00000037...ed25519f",
+          activeRing: 0
+        }
+      ];
+
+      let currentIdx = 0;
+      const titleEl = document.getElementById("prop-title");
+      const formulaEl = document.getElementById("prop-formula");
+      const meaningEl = document.getElementById("prop-meaning");
+      const hashEl = document.getElementById("prop-hash");
+      const cycleBtn = document.getElementById("cycle-btn");
+      const svgEl = document.getElementById("citadel-svg");
+
+      function renderInvariant(idx) {
+        const item = invariants[idx];
+        titleEl.textContent = item.title;
+        formulaEl.textContent = item.formula;
+        meaningEl.textContent = item.meaning;
+        hashEl.textContent = item.hash;
+
+        const circles = container.querySelectorAll("circle");
+        circles.forEach((c) => {
+          const ring = parseInt(c.dataset.ring, 10);
+          if (item.activeRing === -1) {
+            c.setAttribute("fill", ring === 0 ? "#10b981" : ring === 1 ? "#e2e8f0" : ring === 2 ? "#94a3b8" : "#64748b");
+            c.setAttribute("r", ring === 0 ? "4.5" : ring === 1 ? "3" : ring === 2 ? "2.4" : "2");
+          } else if (ring === item.activeRing) {
+            c.setAttribute("fill", "#10b981");
+            c.setAttribute("fill-opacity", "1");
+            c.setAttribute("r", ring === 0 ? "5.5" : "3.8");
+          } else {
+            c.setAttribute("fill", "#475569");
+            c.setAttribute("fill-opacity", "0.35");
+            c.setAttribute("r", "2");
+          }
+        });
+      }
+
+      function nextInvariant() {
+        currentIdx = (currentIdx + 1) % invariants.length;
+        renderInvariant(currentIdx);
+      }
+
+      cycleBtn.addEventListener("click", nextInvariant);
+      svgEl.addEventListener("click", nextInvariant);
+    })();
+  </script>
+</body>
+</html>
